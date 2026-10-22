@@ -83,16 +83,16 @@ if (serviceRoot || checklistRoot) {
 		}
 	};
 
-	const portalLabelKey = (service) => (
-		service.category === "Tamil Nadu e-Sevai Certificates"
-			? "service.openSource"
-			: "service.openOfficialPortal"
-	);
 	const evidenceValue = (value) => {
 		if (value === "Not verified") return t("service.notVerified");
 		if (value === "Not stated by source") return t("service.notStatedBySource");
 		return value || t("service.notVerified");
 	};
+	const localizedEvidenceValue = (metadata, key) => (
+		window.LifeGraphI18n?.language === "ta" && metadata[`${key}_ta`]
+			? metadata[`${key}_ta`]
+			: evidenceValue(metadata[key])
+	);
 
 	const renderChecklist = (service, target) => {
 		const savedRequirements = Array(service.requirements.length).fill(false);
@@ -113,8 +113,15 @@ if (serviceRoot || checklistRoot) {
 			? "service.verified"
 			: "service.needsVerification";
 		requirementsPanel.append(make("span", "verification-badge", t(statusKey)));
-		const instructions = make("a", "source-link requirement-source-link", t(portalLabelKey(service)));
-		instructions.href = service.official_portal_url || service.source_url;
+		const hasRequirementsSource = requirementsVerified && service.requirements_source_url;
+		const instructions = make(
+			"a",
+			"source-link requirement-source-link",
+			t(hasRequirementsSource ? "service.openRequirementsSource" : "service.openOfficialPortal")
+		);
+		instructions.href = hasRequirementsSource
+			? service.requirements_source_url
+			: service.official_portal_url || service.source_url;
 		instructions.target = "_blank";
 		instructions.rel = "noopener noreferrer";
 		requirementsPanel.append(instructions);
@@ -123,7 +130,9 @@ if (serviceRoot || checklistRoot) {
 				"p",
 				"verification-message source-attribution",
 				t("service.checklistSource", {
-					title: sourceMetadata.source_title,
+					title: window.LifeGraphI18n?.language === "ta"
+						? sourceMetadata.source_title_ta || sourceMetadata.source_title
+						: sourceMetadata.source_title,
 					updated: sourceMetadata.source_last_updated || t("service.notVerified"),
 					checked: sourceMetadata.verification_date || t("service.notVerified"),
 				})
@@ -197,7 +206,10 @@ if (serviceRoot || checklistRoot) {
 				input.disabled = true;
 				input.dataset.checklistKind = "requirement";
 				input.dataset.checklistIndex = String(index);
-				input.setAttribute("aria-label", requirement);
+				input.setAttribute(
+					"aria-label",
+					window.LifeGraphI18n?.serviceRequirement(service, index) || requirement
+				);
 				input.addEventListener("change", async () => {
 					const next = input.checked;
 					input.disabled = true;
@@ -214,7 +226,11 @@ if (serviceRoot || checklistRoot) {
 						updateRequirementProgress();
 					}
 				});
-				label.append(input, make("span", "", requirement));
+				label.append(input, make(
+					"span",
+					"",
+					window.LifeGraphI18n?.serviceRequirement(service, index) || requirement
+				));
 				requirementList.append(label);
 			});
 			updateRequirementProgress();
@@ -223,15 +239,15 @@ if (serviceRoot || checklistRoot) {
 			requirementsPanel.append(make("p", "empty-requirements", t("service.noProofItems")));
 		}
 		const limitations = make("dl", "verification-limits");
-		for (const [labelKey, value] of [
-			["service.eligibility", sourceMetadata.eligibility],
-			["service.fees", sourceMetadata.fees],
-			["service.processingTime", sourceMetadata.processing_time],
-			["service.originalsCopies", sourceMetadata.originals_or_photocopies],
+		for (const [labelKey, valueKey] of [
+			["service.eligibility", "eligibility"],
+			["service.fees", "fees"],
+			["service.processingTime", "processing_time"],
+			["service.originalsCopies", "originals_or_photocopies"],
 		]) {
 			limitations.append(
 				make("dt", "", t(labelKey)),
-				make("dd", "", evidenceValue(value))
+				make("dd", "", localizedEvidenceValue(sourceMetadata, valueKey))
 			);
 		}
 		requirementsPanel.append(limitations);
@@ -344,11 +360,15 @@ if (serviceRoot || checklistRoot) {
 			target.append(make("p", "translation-warning", t("service.purposeTranslationNote")));
 		}
 		if (service.responsible_authority) {
-			target.append(make("p", "service-authority", `${t("service.responsibleAuthority")} ${service.responsible_authority}`));
+			const authority = window.LifeGraphI18n?.serviceAuthority(service)
+				|| service.responsible_authority;
+			target.append(make("p", "service-authority", `${t("service.responsibleAuthority")} ${authority}`));
 		}
 
-		const source = make("a", "source-link", t(portalLabelKey(service)));
-		source.href = service.official_portal_url || service.source_url;
+		const source = make("a", "source-link", t("service.openOfficialPortal"));
+		source.href = service.official_application_url
+			|| service.official_portal_url
+			|| service.source_url;
 		source.target = "_blank";
 		source.rel = "noopener noreferrer";
 		target.append(source);

@@ -76,6 +76,27 @@ def seed_services(connection: sqlite3.Connection):
                 service["id"],
             ),
         )
+        if service.get("requirement_verification_status") != "verified":
+            continue
+        connection.execute(
+            """
+            UPDATE services
+            SET source_url = ?, responsible_authority = ?,
+                verification_status = ?, last_verified = ?,
+                requirement_verification_status = ?, checklist_metadata_json = ?
+            WHERE id = ? AND is_demo = 1 AND requirements_json = ?
+            """,
+            (
+                service["source_url"],
+                service.get("responsible_authority", ""),
+                service["verification_status"],
+                service["last_verified"],
+                service["requirement_verification_status"],
+                json.dumps(service["checklist_metadata"]),
+                service["id"],
+                json.dumps(service["requirements"]),
+            ),
+        )
     for service in catalogue["services"]:
         connection.execute(
             """

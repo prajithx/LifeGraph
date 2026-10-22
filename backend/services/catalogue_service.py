@@ -18,6 +18,10 @@ def _service_from_row(row):
         if "checklist_metadata_json" in row.keys()
         else "{}"
     )
+    requirements_source_url = checklist_metadata.get("requirements_source_url")
+    official_application_url = checklist_metadata.get(
+        "official_application_url", row["source_url"]
+    )
     return {
         "id": row["id"],
         "name": row["name"],
@@ -25,8 +29,9 @@ def _service_from_row(row):
         "description": row["purpose"],
         "requirements": requirements,
         "source_url": row["source_url"],
-        "official_portal_url": row["source_url"],
-        "requirements_source_url": row["source_url"],
+        "official_application_url": official_application_url,
+        "official_portal_url": official_application_url,
+        "requirements_source_url": requirements_source_url,
         "category": row["category"],
         "responsible_authority": row["responsible_authority"],
         "verification_status": row["requirement_verification_status"],

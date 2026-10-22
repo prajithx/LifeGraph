@@ -126,7 +126,15 @@ class ServiceCatalogueTests(unittest.TestCase):
             if service["name"] in supported:
                 self.assertEqual(service["requirements"], supported[service["name"]])
                 self.assertEqual(service["verification_status"], "verified")
-                self.assertEqual(service["last_verified"], "2026-10-14")
+                self.assertEqual(service["last_verified"], "2026-10-22")
+                self.assertEqual(
+                    service["official_application_url"],
+                    "https://www.tnesevai.tn.gov.in/",
+                )
+                self.assertEqual(
+                    service["requirements_source_url"],
+                    "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
+                )
                 self.assertEqual(
                     service["checklist_metadata"]["source_title"],
                     "Tamil Nadu e-Sevai Services Offered",
@@ -139,18 +147,32 @@ class ServiceCatalogueTests(unittest.TestCase):
                     service["checklist_metadata"]["mandatory_optional_classification"],
                     "Not stated by source",
                 )
-                for field in (
-                    "eligibility",
-                    "fees",
-                    "processing_time",
-                    "originals_or_photocopies",
-                ):
-                    self.assertEqual(service["checklist_metadata"][field], "Not verified")
+                self.assertEqual(
+                    service["checklist_metadata"]["eligibility"],
+                    "Not stated by source",
+                )
+                self.assertEqual(
+                    service["checklist_metadata"]["fees"],
+                    "Application Fee: 0; Service Charge: 60 (currency not stated by source)",
+                )
+                self.assertEqual(
+                    service["checklist_metadata"]["processing_time"],
+                    {
+                        "Income Certificate": "15 days",
+                        "Community Certificate": "Not stated by source",
+                        "Nativity Certificate": "7 days",
+                    }[service["name"]],
+                )
+                self.assertEqual(
+                    service["checklist_metadata"]["originals_or_photocopies"],
+                    "Not stated by source",
+                )
             else:
                 self.assertEqual(service["requirements"], [])
                 self.assertEqual(service["verification_status"], "needs_verification")
                 self.assertIsNone(service["last_verified"])
                 self.assertEqual(service["checklist_metadata"], {})
+                self.assertIsNone(service["requirements_source_url"])
 
     def test_search_is_case_insensitive_and_bounded(self):
         response = self.client.get("/api/services?q=income")
@@ -300,11 +322,52 @@ class ServiceCatalogueTests(unittest.TestCase):
             income_checklist["source_url"],
             "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
         )
+        self.assertEqual(
+            income_checklist["official_application_url"],
+            "https://www.tnesevai.tn.gov.in/",
+        )
+        self.assertEqual(
+            income_checklist["requirements_source_url"],
+            "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
+        )
         self.assertEqual(income_checklist["source_title"], "Tamil Nadu e-Sevai Services Offered")
-        self.assertEqual(income_checklist["verification_date"], "2026-10-14")
+        self.assertEqual(income_checklist["verification_date"], "2026-10-22")
         self.assertIn("Verify with the official authority", income_checklist["message"])
         self.assertEqual(self.client.get("/api/services/not-found").status_code, 404)
         self.assertEqual(self.client.get("/api/services/!!").status_code, 400)
+
+    def test_verified_source_refresh_preserves_saved_checklist_progress(self):
+        from database.db import initialize_database
+
+        with sqlite3.connect(self.database_path) as connection:
+            user_id = connection.execute("SELECT id FROM users LIMIT 1").fetchone()[0]
+            connection.execute(
+                """
+                UPDATE services
+                SET checklist_metadata_json = ?, last_verified = ?
+                WHERE id = ?
+                """,
+                ('{"source_title":"Old source"}', "2025-01-01", "tn-income-certificate"),
+            )
+            connection.execute(
+                """
+                INSERT INTO checklist_progress (
+                    user_id, service_id, kind, item_index, checked
+                ) VALUES (?, ?, 'requirement', 0, 1)
+                """,
+                (user_id, "tn-income-certificate"),
+            )
+
+        initialize_database(self.database_path)
+
+        detail = self.client.get("/api/services/tn-income-certificate").get_json()
+        progress = self.client.get("/api/checklists/tn-income-certificate").get_json()
+        self.assertEqual(detail["last_verified"], "2026-10-22")
+        self.assertEqual(
+            detail["checklist_metadata"]["source_title"],
+            "Tamil Nadu e-Sevai Services Offered",
+        )
+        self.assertTrue(progress["requirements"][0])
 
     def test_each_demo_service_has_selectable_detail_and_correct_checklist_state(self):
         services = self.client.get("/api/services").get_json()["services"]

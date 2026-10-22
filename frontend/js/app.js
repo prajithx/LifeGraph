@@ -46,21 +46,27 @@ window.LifeGraphI18n = {
   get language() { return currentLanguage; },
   serviceName(service) {
     if (currentLanguage !== "ta") return service.name;
-    const key = service.id === "tn-residence-certificate"
-      ? "services.residence.name"
-      : service.id === "tn-income-certificate"
-        ? "services.income.name"
-        : null;
-    return key ? translate(key) : service.name;
+    const key = `services.${service.id}.name`;
+    const localized = translate(key);
+    return localized === key ? service.name : localized;
   },
   servicePurpose(service) {
     if (currentLanguage !== "ta") return service.purpose;
-    const key = service.id === "tn-residence-certificate"
-      ? "services.residence.purpose"
-      : service.id === "tn-income-certificate"
-        ? "services.income.purpose"
-        : null;
-    return key ? translate(key) : service.purpose;
+    const key = `services.${service.id}.purpose`;
+    const localized = translate(key);
+    return localized === key ? service.purpose : localized;
+  },
+  serviceAuthority(service) {
+    if (currentLanguage !== "ta") return service.responsible_authority;
+    const key = `services.${service.id}.authority`;
+    const localized = translate(key);
+    return localized === key ? service.responsible_authority : localized;
+  },
+  serviceRequirement(service, index) {
+    if (currentLanguage !== "ta") return service.requirements[index];
+    const key = `services.${service.id}.requirement.${index}`;
+    const localized = translate(key);
+    return localized === key ? service.requirements[index] : localized;
   },
 };
 
