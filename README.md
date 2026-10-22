@@ -1,6 +1,6 @@
 # LifeGraph
 
-LifeGraph is a privacy-first citizen service orchestration starter. It contains a Flask server, a bilingual static-style frontend, a SQLite catalogue, and clearly marked demo service data. Catalogue guidance is informational: official proof requirements and service-centre listings are not yet verified.
+LifeGraph is a privacy-first citizen service assistance starter. It contains a Flask server, a bilingual frontend, a SQLite catalogue, account-owned checklists, and private document storage. Three Tamil Nadu e-Sevai certificate document lists are transcribed from the official directory; the other 30 catalogue entries have no verified proof requirements. The directory page was last updated in 2023, so all information must be confirmed with the relevant authority before applying.
 
 ## Project layout
 
@@ -58,7 +58,7 @@ New uploads are limited to PDF, PNG, JPG, or JPEG files and 10 MB, validated aga
 
 Checklist progress is stored server-side by authenticated user, service, checklist type, and item index. The selected catalogue service and language preference remain in browser storage.
 
-The Centre Finder is an unavailable-state page, not a functioning search or map. The official e-Sevai portal describes visiting a nearby e-Sevai centre, but LifeGraph has not verified a public centre directory/API for it. The remaining catalogue services belong to separate authorities and may use separate centre networks. A current, approved source and coverage details are required per supported network before adding centre search; no centre names, addresses, coordinates, hours, maps, or directions are fabricated.
+The Centre Finder is an unavailable-state page, not a functioning search or map. On 22 October 2026, the official e-Sevai portal still advised users to visit a nearby centre, but no public centre directory/API was verified. The linked TNeGA nearby-centre URL returned 404, the TNGIS applications page showed placeholder rows, and its data/API directory did not provide a verified centre dataset. Other catalogue services belong to separate authorities and may use separate centre networks. A current, approved source and coverage details are required per supported network; no centre names, addresses, coordinates, hours, maps, or directions are fabricated.
 
 ## Demo walkthrough and readiness
 
@@ -71,13 +71,15 @@ Use a dedicated demo account and synthetic documents only; do not upload real pe
 5. Switch the language picker to Tamil and back to English.
 6. Use **Log out** and confirm the private workspace returns to the login screen.
 
-Before a live demo, confirm the intended demo account can log in, the local server responds on port 5000, and the synthetic PDF upload/download works in the presentation browser. All 33 catalogue entries are demo data; their requirement status is `needs_verification`. Tamil service-name and description translations are unverified. Do not present the catalogue as official guidance or rely on its requirements.
+Before a live demo, confirm the intended demo account can log in, the local server responds on port 5000, and the synthetic PDF upload/download works in the presentation browser. All 33 catalogue entries are demo/reference data: three e-Sevai entries have documents listed by the official source and 30 remain `needs_verification`. The e-SeVai source page was last updated on 10/04/2023; its listed fees have no currency unit stated. Tamil service, authority, and document wording is provided as an unverified translation. Do not rely on the catalogue as current application instructions.
 
 External connections are limited to outbound links to official/department portals and optional SMTP password-reset delivery when configured. There is no centre search, map, geocoding, centre-directory API, OCR, document analysis, or document upload to a third party. Password-reset email requires the SMTP variables and trusted HTTPS `LIFEGRAPH_PUBLIC_URL` listed above; it is not configured by default. Verify any service requirements and availability directly with the relevant authority.
 
 ## Services, language, and APIs
 
-The catalogue contains 33 clearly marked demo entries: 16 Tamil Nadu e-Sevai certificate names and 17 “Everyday Government Services” examples. All 33 currently have unverified requirement status. Service links point to department portals; they do not imply every listed task is available through e-Sevai. No official document rules are claimed. The interface supports English and Tamil; displayed Tamil service-name and description translations are marked unverified.
+The catalogue contains 33 clearly marked demo entries: 16 Tamil Nadu e-Sevai certificate names and 17 “Everyday Government Services” examples. Income, Community, and Nativity Certificate requirements match rows 62–64 of the official [Tamil Nadu e-Sevai Services Offered](https://tnesevai.tn.gov.in/Pages/ServiceList.aspx) directory; the displayed authority is Revenue Administration, Government of Tamil Nadu. That page was last updated on 10/04/2023 and was checked on 22 October 2026. It lists a 15-day timeline for Income Certificate and a 7-day timeline for Nativity Certificate; the Community Certificate row has no timeline. For these entries it lists Application Fee `0` and Service Charge `60`, without identifying a currency unit. Fees and processing times may be outdated; confirm all details with the authority. The source does not distinguish mandatory from optional documents, or state eligibility and original/copy rules. The other 30 entries have no confirmed document requirements; their official portal links do not imply that every example is available through e-Sevai. English and Tamil are supported; Tamil names and translations are unverified.
+
+For the three source-backed certificate entries, the official e-Sevai portal is the application-service starting point (`https://www.tnesevai.tn.gov.in/`); the Services Offered directory is linked separately as the requirement source. Other records link to the responsible department or authority portal where known. No unverified document lists, fees, eligibility rules, or processing times are presented as confirmed.
 
 Authenticated catalogue/workflow APIs:
 
