@@ -339,7 +339,7 @@ class ServiceCatalogueTests(unittest.TestCase):
     def test_verified_source_refresh_preserves_saved_checklist_progress(self):
         from database.db import initialize_database
 
-        with sqlite3.connect(self.database_path) as connection:
+        with closing(sqlite3.connect(self.database_path)) as connection, connection:
             user_id = connection.execute("SELECT id FROM users LIMIT 1").fetchone()[0]
             connection.execute(
                 """
