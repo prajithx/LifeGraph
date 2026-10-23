@@ -94,7 +94,7 @@ class ServiceCatalogueTests(unittest.TestCase):
                 "Details of houses owned ward wise",
                 "Family or Smart Card",
                 "Self-Declaration of Applicant",
-                "Salary Certificate(Latest Copy)",
+                "Salary Certificate (Latest Copy)",
                 "PAN card",
             ],
             "Community Certificate": [
@@ -118,7 +118,7 @@ class ServiceCatalogueTests(unittest.TestCase):
             self.assertTrue(service["description"])
             self.assertTrue(service["responsible_authority"])
             self.assertTrue(service["official_portal_url"].startswith("https://"))
-            if service["category"] == "Tamil Nadu e-Sevai Certificates":
+            if service["category"] == "Tamil Nadu e-Sevai Certificates" and service["name"] not in supported:
                 self.assertEqual(
                     service["source_url"],
                     "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
@@ -126,7 +126,7 @@ class ServiceCatalogueTests(unittest.TestCase):
             if service["name"] in supported:
                 self.assertEqual(service["requirements"], supported[service["name"]])
                 self.assertEqual(service["verification_status"], "verified")
-                self.assertEqual(service["last_verified"], "2026-10-22")
+                self.assertEqual(service["last_verified"], "2026-10-23")
                 self.assertEqual(
                     service["official_application_url"],
                     "https://www.tnesevai.tn.gov.in/",
@@ -137,11 +137,11 @@ class ServiceCatalogueTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     service["checklist_metadata"]["source_title"],
-                    "Tamil Nadu e-Sevai Services Offered",
+                    "Tamil Nadu e-Sevai Citizen FAQ — document requirements",
                 )
                 self.assertEqual(
                     service["checklist_metadata"]["source_last_updated"],
-                    "10/04/2023",
+                    "Not stated by source",
                 )
                 self.assertEqual(
                     service["checklist_metadata"]["mandatory_optional_classification"],
@@ -314,13 +314,13 @@ class ServiceCatalogueTests(unittest.TestCase):
                 "Details of houses owned ward wise",
                 "Family or Smart Card",
                 "Self-Declaration of Applicant",
-                "Salary Certificate(Latest Copy)",
+                "Salary Certificate (Latest Copy)",
                 "PAN card",
             ],
         )
         self.assertEqual(
             income_checklist["source_url"],
-            "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
+            "https://www.tnesevai.tn.gov.in/Citizen/FAQ.html",
         )
         self.assertEqual(
             income_checklist["official_application_url"],
@@ -328,10 +328,13 @@ class ServiceCatalogueTests(unittest.TestCase):
         )
         self.assertEqual(
             income_checklist["requirements_source_url"],
-            "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
+            "https://www.tnesevai.tn.gov.in/Citizen/FAQ.html",
         )
-        self.assertEqual(income_checklist["source_title"], "Tamil Nadu e-Sevai Services Offered")
-        self.assertEqual(income_checklist["verification_date"], "2026-10-22")
+        self.assertEqual(
+            income_checklist["source_title"],
+            "Tamil Nadu e-Sevai Citizen FAQ — document requirements",
+        )
+        self.assertEqual(income_checklist["verification_date"], "2026-10-23")
         self.assertIn("Verify with the official authority", income_checklist["message"])
         self.assertEqual(self.client.get("/api/services/not-found").status_code, 404)
         self.assertEqual(self.client.get("/api/services/!!").status_code, 400)
@@ -362,10 +365,10 @@ class ServiceCatalogueTests(unittest.TestCase):
 
         detail = self.client.get("/api/services/tn-income-certificate").get_json()
         progress = self.client.get("/api/checklists/tn-income-certificate").get_json()
-        self.assertEqual(detail["last_verified"], "2026-10-22")
+        self.assertEqual(detail["last_verified"], "2026-10-23")
         self.assertEqual(
             detail["checklist_metadata"]["source_title"],
-            "Tamil Nadu e-Sevai Services Offered",
+            "Tamil Nadu e-Sevai Citizen FAQ — document requirements",
         )
         self.assertTrue(progress["requirements"][0])
 
