@@ -461,7 +461,7 @@ class AuthenticationTests(unittest.TestCase):
         initialize_database(self.database_path)
         self.assertEqual(
             self.client.get(f"/api/services/{service_id}").get_json()["source_url"],
-            "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
+            "https://www.tnesevai.tn.gov.in/Citizen/FAQ.html",
         )
         self.assertEqual(
             self.client.get(progress_path).get_json()["requirements"][0],

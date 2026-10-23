@@ -133,7 +133,7 @@ class ServiceCatalogueTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     service["requirements_source_url"],
-                    "https://tnesevai.tn.gov.in/Pages/ServiceList.aspx",
+                    "https://www.tnesevai.tn.gov.in/Citizen/FAQ.html",
                 )
                 self.assertEqual(
                     service["checklist_metadata"]["source_title"],

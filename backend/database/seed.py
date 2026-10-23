@@ -81,12 +81,18 @@ def seed_services(connection: sqlite3.Connection):
         connection.execute(
             """
             UPDATE services
-            SET source_url = ?, responsible_authority = ?,
+            SET requirements_json = ?, source_url = ?, responsible_authority = ?,
                 verification_status = ?, last_verified = ?,
                 requirement_verification_status = ?, checklist_metadata_json = ?
             WHERE id = ? AND is_demo = 1 AND requirements_json = ?
+               OR (
+                    id = ? AND is_demo = 1
+                    AND source_url = 'https://tnesevai.tn.gov.in/Pages/ServiceList.aspx'
+                    AND checklist_metadata_json LIKE '%Tamil Nadu e-Sevai Services Offered%'
+               )
             """,
             (
+                json.dumps(service["requirements"]),
                 service["source_url"],
                 service.get("responsible_authority", ""),
                 service["verification_status"],
@@ -95,6 +101,7 @@ def seed_services(connection: sqlite3.Connection):
                 json.dumps(service["checklist_metadata"]),
                 service["id"],
                 json.dumps(service["requirements"]),
+                service["id"],
             ),
         )
     for service in catalogue["services"]:
