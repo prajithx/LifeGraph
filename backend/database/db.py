@@ -106,6 +106,38 @@ def initialize_database(database_path):
             )
             """
         )
+        document_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(documents)").fetchall()
+        }
+        for column, definition in (
+            ("display_name", "TEXT"),
+            ("issue_date", "TEXT"),
+            ("expiry_date", "TEXT"),
+            ("reminder_intervals", "TEXT"),
+        ):
+            if column not in document_columns:
+                connection.execute(f"ALTER TABLE documents ADD COLUMN {column} {definition}")
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+                kind TEXT NOT NULL,
+                due_date TEXT NOT NULL,
+                reminder_interval INTEGER NOT NULL CHECK (reminder_interval IN (30, 7, 0)),
+                message_key TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'unread'
+                    CHECK (status IN ('unread', 'read', 'dismissed')),
+                created_at TEXT NOT NULL,
+                UNIQUE (document_id, due_date, reminder_interval)
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS notifications_by_owner ON notifications(user_id, status, due_date)"
+        )
         connection.execute(
             """
             CREATE INDEX IF NOT EXISTS documents_by_owner

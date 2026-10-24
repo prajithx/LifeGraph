@@ -6,6 +6,7 @@ import re
 import sqlite3
 import tempfile
 import unittest
+from datetime import date
 from contextlib import contextmanager
 from unittest.mock import patch
 
@@ -14,6 +15,7 @@ from app import create_app
 from database.db import get_connection
 from werkzeug.datastructures import FileStorage
 from services.document_service import DocumentValidationError, store_document
+from services.reminder_service import generate_notifications, notification_state
 
 
 class DocumentUploadTests(unittest.TestCase):
@@ -201,13 +203,123 @@ class DocumentUploadTests(unittest.TestCase):
                 data={"document": (io.BytesIO(b"%PDF-1.7 synthetic"), "sample.pdf")},
                 content_type="multipart/form-data",
             )
-
         self.assertEqual(response.status_code, 500)
         self.assertIn("could not be stored", response.get_json()["error"].lower())
         self.assertEqual(os.listdir(self.upload_directory), [])
         with get_connection(self.app.config["DATABASE_PATH"]) as connection:
             self.assertEqual(
                 connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0],
+                0,
+            )
+
+    def test_metadata_reminders_are_idempotent_and_editable(self):
+        response = self.client.post(
+            "/api/documents/upload",
+            data={
+                "document": (io.BytesIO(b"%PDF-1.7 dated"), "dated.pdf"),
+                "document_name": "Passport",
+                "issue_date": "2025-01-01",
+                "expiry_date": "2025-02-01",
+                "reminder_intervals": "[30, 7, 0]",
+            },
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 201)
+        document = response.get_json()
+        self.assertEqual(document["reminder_intervals"], [30, 7, 0])
+
+        no_expiry = self.client.post(
+            "/api/documents/upload",
+            data={"document": (io.BytesIO(b"%PDF-1.7 no date"), "no-date.pdf")},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(no_expiry.status_code, 201)
+        self.assertEqual(no_expiry.get_json()["expiry_date"], None)
+
+        with get_connection(self.app.config["DATABASE_PATH"]) as connection:
+            user_id = connection.execute(
+                "SELECT id FROM users WHERE email = ?", ("documents@example.com",)
+            ).fetchone()["id"]
+            inserted = generate_notifications(
+                connection, today=date(2025, 2, 1), timezone_name="Asia/Kolkata"
+            )
+            duplicate = generate_notifications(
+                connection, today=date(2025, 2, 1), timezone_name="Asia/Kolkata"
+            )
+            self.assertEqual(inserted, 0)
+            self.assertEqual(duplicate, 0)
+            self.assertEqual(
+                connection.execute(
+                    "SELECT COUNT(*) FROM notifications WHERE user_id = ?", (user_id,)
+                ).fetchone()[0],
+                3,
+            )
+
+        reminders = self.client.get("/api/documents/notifications").get_json()
+        self.assertEqual(reminders["timezone"], "Asia/Kolkata")
+        self.assertEqual(len(reminders["notifications"]), 3)
+
+        updated = self.client.put(
+            f"/api/documents/{document['id']}",
+            json={
+                "document_name": "Renewed Passport",
+                "issue_date": None,
+                "expiry_date": None,
+                "reminder_intervals": [],
+            },
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertIsNone(updated.get_json()["expiry_date"])
+        with get_connection(self.app.config["DATABASE_PATH"]) as connection:
+            self.assertEqual(
+                connection.execute(
+                    "SELECT COUNT(*) FROM notifications WHERE document_id = ?",
+                    (document["id"],),
+                ).fetchone()[0],
+                0,
+            )
+
+    def test_reminder_states_and_document_delete_cascade(self):
+        with get_connection(self.app.config["DATABASE_PATH"]) as connection:
+            user_id = connection.execute(
+                "SELECT id FROM users WHERE email = ?", ("documents@example.com",)
+            ).fetchone()["id"]
+            connection.execute(
+                """
+                INSERT INTO documents (
+                    id, user_id, original_filename, stored_filename, size_bytes, created_at,
+                    display_name, expiry_date, reminder_intervals
+                ) VALUES ('future', ?, 'future.pdf', 'future.pdf', 5, '2025-01-01',
+                          'Future', '2025-03-01', '[0]')
+                """,
+                (user_id,),
+            )
+            generate_notifications(connection, today=date(2025, 2, 1))
+            self.assertEqual(
+                connection.execute(
+                    "SELECT COUNT(*) FROM notifications WHERE document_id = 'future'"
+                ).fetchone()[0],
+                0,
+            )
+            generate_notifications(connection, today=date(2025, 3, 1))
+        self.assertEqual(
+            notification_state("2025-03-01", date(2025, 3, 1)),
+            "due_today",
+        )
+        self.assertEqual(
+            notification_state("2025-03-02", date(2025, 3, 1)),
+            "upcoming",
+        )
+        self.assertEqual(
+            notification_state("2025-02-28", date(2025, 3, 1)),
+            "overdue",
+        )
+        with get_connection(self.app.config["DATABASE_PATH"]) as connection:
+            connection.execute("DELETE FROM documents WHERE id = 'future'")
+            self.assertEqual(
+                connection.execute(
+                    "SELECT COUNT(*) FROM notifications WHERE document_id = 'future'"
+                ).fetchone()[0],
                 0,
             )
 

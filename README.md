@@ -92,8 +92,11 @@ Authenticated APIs:
 - `GET /api/auth/me`
 - `GET /api/documents`
 - `POST /api/documents/upload`
+- `PUT /api/documents/<document_id>` (owner-only metadata and reminder settings)
 - `GET /api/documents/<document_id>` (attachment download after ownership check)
 - `DELETE /api/documents/<document_id>` (owner-only)
+- `GET /api/documents/notifications` (owner-only in-app renewal reminders)
+- `PATCH /api/documents/notifications/<notification_id>` (owner-only read/dismiss)
 - `GET` and `PUT /api/checklists/<service_id>` (private checklist progress)
 
 Open `/api/health` for the health response. Run tests from `backend/` with:
@@ -101,6 +104,28 @@ Open `/api/health` for the health response. Run tests from `backend/` with:
 ```powershell
 python -m unittest discover -s ..\tests -v
 ```
+
+### Document reminders
+
+Document names, issue dates, expiry/renewal dates, and reminder selections are stored
+as database metadata; uploaded files are not changed or inspected. Reminder choices
+are 30 days before, 7 days before, and on the due date. Documents without an expiry
+date never create reminders. The default timezone is `Asia/Kolkata` and can be
+changed with `LIFEGRAPH_TIMEZONE`; dates are calendar dates in that configured zone.
+
+Reminder generation is idempotent and can be run persistently outside the web process:
+
+```powershell
+cd backend
+python -m services.reminder_service
+```
+
+In production, schedule that command with cron, systemd timers, or the platform's
+scheduled-job service at least daily, using the same database and environment
+configuration as Flask. If the application or job is offline, no notification is
+sent; a later run catches up missed reminder dates. The current phase is in-app only:
+there is no email delivery or email credential use. A future mail adapter should
+consume owner-scoped notifications after explicit configuration.
 
 ## Remaining security work
 

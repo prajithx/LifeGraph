@@ -357,6 +357,16 @@ html[lang="ta"] {
 .panel-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .document-list { margin: 0; padding: 0; list-style: none; }
+.document-metadata { margin: 14px 0; padding: 12px; border: 1px solid var(--line); display: grid; gap: 8px; }
+.document-metadata legend { padding: 0 5px; color: var(--forest); font-size: 10px; font-weight: 700; }
+.document-metadata label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; }
+.document-metadata input[type="text"], .document-metadata input[type="date"] { min-height: 32px; padding: 5px 7px; border: 1px solid var(--line); font: inherit; color: var(--ink); background: #fff; }
+.metadata-label { color: var(--muted); font-size: 10px; }
+.document-metadata .metadata-check { display: inline-flex; grid-template-columns: auto 1fr; align-items: center; gap: 6px; }
+.document-reminder { display: flex; align-items: center; gap: 9px; padding: 11px 0; border-top: 1px solid var(--line); color: var(--ink); font-size: 11px; }
+.document-reminder a { margin-left: auto; color: var(--forest); font-weight: 700; }
+.document-reminder button, .document-edit { padding: 5px 8px; border: 1px solid var(--line); color: var(--forest); background: #fff; font: 700 9px var(--sans); cursor: pointer; }
+.reminder-overdue { color: #8a352b; }
 .document-list li { min-height: 53px; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; border-top: 1px solid #edf0ec; }
 .document-list li.empty-document-state { display: block; }
 .file-icon { width: 29px; height: 31px; display: grid; place-items: center; border-radius: 8px; }

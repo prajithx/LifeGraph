@@ -3,6 +3,11 @@ const uploadStatus = document.querySelector("[data-document-upload-status]");
 const uploadButton = document.querySelector("[data-document-upload-confirm]");
 const documentList = document.querySelector("[data-document-list]");
 const uploadTriggers = document.querySelectorAll("[data-document-upload-trigger]");
+const documentNameInput = document.querySelector("[data-document-name]");
+const issueDateInput = document.querySelector("[data-document-issue-date]");
+const expiryDateInput = document.querySelector("[data-document-expiry-date]");
+const reminderInputs = document.querySelectorAll("[data-document-reminder]");
+const reminderList = document.querySelector("[data-document-reminders]");
 
 if (uploadInput && uploadStatus && uploadButton) {
   const maxUploadSize = 10 * 1024 * 1024;
@@ -111,7 +116,48 @@ if (uploadInput && uploadStatus && uploadButton) {
       }
     });
     row.append(icon, name, state, remove);
+    const edit = document.createElement("button");
+    edit.className = "document-edit";
+    edit.type = "button";
+    edit.dataset.i18n = "dashboard.editDocument";
+    edit.textContent = translate(edit.dataset.i18n);
+    edit.addEventListener("click", () => editDocument(row, {
+      id,
+      document_name: row.dataset.documentName || "",
+      issue_date: row.dataset.issueDate || "",
+      expiry_date: row.dataset.expiryDate || "",
+      reminder_intervals: JSON.parse(row.dataset.reminderIntervals || "[]"),
+    }));
+    row.append(edit);
     documentList.append(row);
+    return row;
+  };
+
+  const applyMetadataInputs = (document) => {
+    documentNameInput.value = document.document_name || "";
+    issueDateInput.value = document.issue_date || "";
+    expiryDateInput.value = document.expiry_date || "";
+    reminderInputs.forEach((input) => {
+      input.checked = (document.reminder_intervals || []).includes(Number(input.value));
+    });
+  };
+
+  const metadataPayload = () => ({
+    document_name: documentNameInput.value,
+    issue_date: issueDateInput.value,
+    expiry_date: expiryDateInput.value,
+    reminder_intervals: [...reminderInputs]
+      .filter((input) => input.checked)
+      .map((input) => Number(input.value)),
+  });
+
+  const editDocument = async (row, document) => {
+    applyMetadataInputs(document);
+    documentNameInput.focus();
+    uploadStatus.textContent = translate("dashboard.editingDocument");
+    uploadButton.textContent = translate("dashboard.saveDocument");
+    uploadButton.disabled = false;
+    uploadButton.dataset.editingDocumentId = document.id;
   };
 
   const showEmptyDocumentMessage = () => {
@@ -154,8 +200,15 @@ if (uploadInput && uploadStatus && uploadButton) {
         return;
       }
       for (const document of payload.documents) {
-        appendUploadedDocument(document.id, document.filename, document.size);
+        const row = appendUploadedDocument(document.id, document.filename, document.size);
+        if (row) {
+          row.dataset.documentName = document.document_name || "";
+          row.dataset.issueDate = document.issue_date || "";
+          row.dataset.expiryDate = document.expiry_date || "";
+          row.dataset.reminderIntervals = JSON.stringify(document.reminder_intervals || []);
+        }
       }
+      loadReminders();
     } catch {
       setStatus("dashboard.documentListFailure", {}, "error");
     }
@@ -200,6 +253,26 @@ if (uploadInput && uploadStatus && uploadButton) {
   });
 
   uploadButton.addEventListener("click", async () => {
+    const editingId = uploadButton.dataset.editingDocumentId;
+    if (editingId) {
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(editingId)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+          body: JSON.stringify(metadataPayload()),
+        });
+        if (!response.ok) throw new Error();
+        delete uploadButton.dataset.editingDocumentId;
+        uploadButton.textContent = translate("dashboard.confirmUpload");
+        uploadButton.disabled = true;
+        setStatus("dashboard.documentSaved", {}, "success");
+        loadDocuments();
+        loadReminders();
+      } catch {
+        setStatus("dashboard.documentSaveFailure", {}, "error");
+      }
+      return;
+    }
     if (!selectedFile || !selectedFileValid || uploading || !isSupported(selectedFile)) return;
     if (selectedFile.size > maxUploadSize) {
       setStatus("dashboard.uploadFailure", {
@@ -215,6 +288,11 @@ if (uploadInput && uploadStatus && uploadButton) {
 
     const formData = new FormData();
     formData.append("document", selectedFile);
+    const metadata = metadataPayload();
+    formData.append("document_name", metadata.document_name);
+    formData.append("issue_date", metadata.issue_date);
+    formData.append("expiry_date", metadata.expiry_date);
+    formData.append("reminder_intervals", JSON.stringify(metadata.reminder_intervals));
     let failureMessageKey = "dashboard.uploadNetworkError";
     try {
       const response = await fetch("/api/documents/upload", {
@@ -245,6 +323,7 @@ if (uploadInput && uploadStatus && uploadButton) {
       selectedFile = null;
       selectedFileValid = false;
       uploadInput.value = "";
+      applyMetadataInputs({});
     } catch {
       setStatus("dashboard.uploadFailure", {
         filename: selectedFile.name,
@@ -257,14 +336,62 @@ if (uploadInput && uploadStatus && uploadButton) {
     }
   });
 
+  const loadReminders = async () => {
+    if (!reminderList) return;
+    try {
+      const response = await fetch("/api/documents/notifications");
+      const payload = await response.json();
+      if (!response.ok) throw new Error();
+      reminderList.replaceChildren();
+      if (!payload.notifications.length) {
+        reminderList.append(Object.assign(document.createElement("li"), {
+          className: "empty-document-state",
+          textContent: translate("dashboard.noReminders"),
+        }));
+        return;
+      }
+      payload.notifications.forEach((notification) => {
+        const item = document.createElement("li");
+        item.className = `document-reminder reminder-${notification.state}`;
+        item.textContent = `${notification.document_name} — ${notification.due_date}`;
+        const manage = document.createElement("a");
+        manage.href = "/dashboard#your-documents";
+        manage.dataset.i18n = "dashboard.manageDocument";
+        manage.textContent = translate(manage.dataset.i18n);
+        const dismiss = document.createElement("button");
+        dismiss.type = "button";
+        dismiss.dataset.i18n = "dashboard.dismissReminder";
+        dismiss.textContent = translate(dismiss.dataset.i18n);
+        dismiss.addEventListener("click", async () => {
+          await fetch(`/api/documents/notifications/${notification.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            body: JSON.stringify({ status: "dismissed" }),
+          });
+          loadReminders();
+        });
+        item.append(document.createTextNode(" "), manage, dismiss);
+        reminderList.append(item);
+      });
+    } catch {
+      reminderList.replaceChildren();
+      reminderList.append(Object.assign(document.createElement("li"), {
+        className: "empty-document-state",
+        textContent: translate("dashboard.reminderLoadFailure"),
+      }));
+    }
+  };
+
   window.addEventListener("lifegraph:languagechange", () => {
     renderStatus();
     uploadButton.textContent = uploading
       ? translate("dashboard.uploadingButton")
       : translate("dashboard.confirmUpload");
     updateDocumentTranslations();
+    loadReminders();
   });
 
   setUploadButton(false);
   loadDocuments();
+  loadReminders();
 }

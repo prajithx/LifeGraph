@@ -125,10 +125,26 @@
           <li class="empty-document-state" data-i18n="dashboard.noPrivateDocuments">No documents uploaded to this account yet.</li>
         </ul>
         <p class="privacy-note" data-i18n="dashboard.privateDocumentsOnly">Only files uploaded to your account appear here. Demo catalogue records are separate.</p>
+        <fieldset class="document-metadata">
+          <legend data-i18n="dashboard.documentDetails">Document details (optional)</legend>
+          <label><span data-i18n="dashboard.documentName">Document name</span><input type="text" maxlength="255" data-document-name></label>
+          <label><span data-i18n="dashboard.issueDate">Issue date</span><input type="date" data-document-issue-date></label>
+          <label><span data-i18n="dashboard.expiryDate">Expiry or renewal date</span><input type="date" data-document-expiry-date></label>
+          <span class="metadata-label" data-i18n="dashboard.reminderPreferences">Remind me</span>
+          <label class="metadata-check"><input type="checkbox" value="30" data-document-reminder> <span data-i18n="dashboard.reminder30">30 days before</span></label>
+          <label class="metadata-check"><input type="checkbox" value="7" data-document-reminder> <span data-i18n="dashboard.reminder7">7 days before</span></label>
+          <label class="metadata-check"><input type="checkbox" value="0" data-document-reminder> <span data-i18n="dashboard.reminderDue">On the due date</span></label>
+        </fieldset>
         <input class="visually-hidden" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" data-document-upload-input aria-describedby="document-upload-status">
         <p class="upload-guidance" data-i18n="dashboard.uploadGuidance">PDF, PNG, JPG, or JPEG · Up to 10 MB</p>
         <p class="upload-status" id="document-upload-status" data-document-upload-status role="status" aria-live="polite" data-i18n="dashboard.uploadIdle">No document selected.</p>
         <button class="upload-confirm-button" type="button" data-document-upload-confirm disabled data-i18n="dashboard.confirmUpload">Upload Document</button>
+      </section>
+
+      <section class="panel reminders-panel" aria-labelledby="reminders-title">
+        <div class="panel-heading"><div><p class="section-kicker" data-i18n="dashboard.renewalsKicker">DOCUMENT RENEWALS</p><h2 id="reminders-title" data-i18n="dashboard.renewalsTitle">Renewals and reminders</h2></div></div>
+        <ul class="reminder-list" data-document-reminders><li class="empty-document-state" data-i18n="dashboard.noReminders">No renewal reminders right now.</li></ul>
+        <p class="privacy-note" data-i18n="dashboard.reminderTimezone">Reminder dates use the configured application timezone.</p>
       </section>
 
       <section class="leave-panel" aria-labelledby="before-leave-title">
