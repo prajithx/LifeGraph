@@ -335,6 +335,15 @@ class ServiceCatalogueTests(unittest.TestCase):
             "Tamil Nadu e-Sevai Citizen FAQ — document requirements",
         )
         self.assertEqual(income_checklist["verification_date"], "2026-10-23")
+        self.assertEqual(income_checklist["last_verified"], "2026-10-23")
+        self.assertEqual(
+            income_checklist["official_application_url"],
+            "https://www.tnesevai.tn.gov.in/",
+        )
+        self.assertNotEqual(
+            income_checklist["official_application_url"],
+            income_checklist["requirements_source_url"],
+        )
         self.assertIn("Verify with the official authority", income_checklist["message"])
         self.assertEqual(self.client.get("/api/services/not-found").status_code, 404)
         self.assertEqual(self.client.get("/api/services/!!").status_code, 400)

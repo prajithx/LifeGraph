@@ -5,6 +5,7 @@ def build_checklist(service):
 	requirements = service["requirements"]
 	return {
 		"service_id": service["id"],
+		"service_name": service["name"],
 		"requirements": requirements,
 		"checklist_metadata": service["checklist_metadata"],
 		"category": service["category"],
@@ -15,6 +16,7 @@ def build_checklist(service):
 		"source_url": service["source_url"],
 		"source_title": service["checklist_metadata"].get("source_title"),
 		"verification_date": service["checklist_metadata"].get("verification_date"),
+		"last_verified": service["last_verified"],
 		"source_last_updated": service["checklist_metadata"].get("source_last_updated"),
 		"mandatory_optional_classification": service["checklist_metadata"].get(
 			"mandatory_optional_classification", "Not verified"

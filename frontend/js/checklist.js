@@ -259,6 +259,7 @@ if (serviceRoot || checklistRoot) {
 		heading.append(make("span", "demo-label", t("service.demoNotRequirements")));
 		reminderPanel.append(heading);
 		reminderPanel.append(make("p", "reminder-caption", t("service.reminderDescription")));
+		reminderPanel.append(make("p", "preparation-status-note", t("service.personalProgressNote")));
 
 		const progressLabel = make("p", "progress-label");
 		const progress = make("progress", "checklist-progress");
@@ -365,16 +366,36 @@ if (serviceRoot || checklistRoot) {
 			target.append(make("p", "service-authority", `${t("service.responsibleAuthority")} ${authority}`));
 		}
 
-		const source = make("a", "source-link", t("service.openOfficialPortal"));
-		source.href = service.official_application_url
+		const requirementsStatus = service.requirement_verification_status || service.verification_status;
+		const statusKey = requirementsStatus === "verified"
+			? "service.verified"
+			: "service.needsVerification";
+		const status = make("p", "detail-verification");
+		status.append(
+			make("span", "verification-badge", t(statusKey)),
+			make("span", "verified-date", t("service.lastVerified", {
+				date: service.last_verified || t("service.notVerified"),
+			}))
+		);
+		target.append(status);
+
+		const applicationLink = make("a", "source-link", t("service.openOfficialPortal"));
+		applicationLink.href = service.official_application_url
 			|| service.official_portal_url
 			|| service.source_url;
-		source.target = "_blank";
-		source.rel = "noopener noreferrer";
-		target.append(source);
-		target.append(make("p", "verified-date", t("service.lastVerified", {
-			date: service.last_verified || t("service.notVerified"),
-		})));
+		applicationLink.target = "_blank";
+		applicationLink.rel = "noopener noreferrer";
+		target.append(make("p", "link-label", t("service.applicationLinkLabel")), applicationLink);
+		if (service.requirements_source_url) {
+			const requirementsLink = make("a", "source-link", t("service.openRequirementsSource"));
+			requirementsLink.href = service.requirements_source_url;
+			requirementsLink.target = "_blank";
+			requirementsLink.rel = "noopener noreferrer";
+			target.append(make("p", "link-label", t("service.requirementsSourceLabel")), requirementsLink);
+		}
+		if (requirementsStatus !== "verified") {
+			target.append(make("p", "verification-warning", t("service.unverifiedWarning")));
+		}
 		renderChecklist(service, target);
 
 		if (serviceRoot) {
